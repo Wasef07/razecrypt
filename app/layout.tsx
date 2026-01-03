@@ -1,17 +1,10 @@
 import { type Metadata } from "next";
-import {
-  ClerkProvider,
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
-} from "@clerk/nextjs";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { ThemeProvider } from "@/components/theme-provider";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
+import Providers from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,21 +18,18 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "RazeCrypt",
-  description:
-    "A secure password and card manager built with Next.js and Clerk, featuring encrypted storage, privacy-first design, and modern authentication.",
+  description: "Secure password and card vault",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
+    <html lang="en">
+      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+        <Providers>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
@@ -48,10 +38,10 @@ export default function RootLayout({
           >
             <Navbar />
             {children}
-            <Toaster position="top-right" reverseOrder={false} />
+            <Toaster position="top-right" />
           </ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+        </Providers>
+      </body>
+    </html>
   );
 }

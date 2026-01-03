@@ -19,11 +19,12 @@ import {
 import { formatCardNumber } from "@/lib/formatCardNumber";
 
 const schema = z.object({
-  cardName: z.string().min(2),
-  cardNumber: z.string().min(12),
-  expiryMonth: z.string().min(1),
-  expiryYear: z.string().min(2),
-  cvv: z.string().min(3),
+  cardName: z.string().min(2, "Card name is required"),
+  cardNumber: z.string().min(12, "Invalid card number"),
+  expiry: z
+    .string()
+    .regex(/^(0[1-9]|1[0-2])\/\d{2}$/, "Invalid expiry date"),
+  cvv: z.string().min(3, "Invalid CVV"),
 });
 
 type Values = z.infer<typeof schema>;
@@ -34,45 +35,58 @@ type Props = {
   onCancel: () => void;
 };
 
+const formatExpiry = (value: string) => {
+  const digits = value.replace(/\D/g, "").slice(0, 4);
+
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+};
+
+
 export default function AddCard({ initialData, onSaved, onCancel }: Props) {
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: {
       cardName: "",
       cardNumber: "",
-      expiryMonth: "",
-      expiryYear: "",
+      expiry: "",
       cvv: "",
     },
   });
+
 
   useEffect(() => {
     if (initialData) {
       form.reset({
         cardName: initialData.cardName,
         cardNumber: initialData.cardNumber,
-        expiryMonth: initialData.expiryMonth,
-        expiryYear: initialData.expiryYear,
+        expiry: `${initialData.expiryMonth}/${initialData.expiryYear}`,
         cvv: initialData.cvv,
       });
     } else {
       form.reset({
         cardName: "",
         cardNumber: "",
-        expiryMonth: "",
-        expiryYear: "",
+        expiry: "",
         cvv: "",
       });
     }
   }, [initialData, form]);
 
   const onSubmit = async (values: Values) => {
-    const method = initialData ? "PUT" : "POST";
+    const [expiryMonth, expiryYear] = values.expiry.split("/");
 
     const res = await fetch("/api/cards", {
-      method,
+      method: initialData ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...values, id: initialData?._id }),
+      body: JSON.stringify({
+        cardName: values.cardName,
+        cardNumber: values.cardNumber,
+        expiryMonth,
+        expiryYear,
+        cvv: values.cvv,
+        id: initialData?._id,
+      }),
     });
 
     if (!res.ok) {
@@ -93,6 +107,7 @@ export default function AddCard({ initialData, onSaved, onCancel }: Props) {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          
           <FormField
             control={form.control}
             name="cardName"
@@ -107,6 +122,7 @@ export default function AddCard({ initialData, onSaved, onCancel }: Props) {
             )}
           />
 
+          
           <FormField
             control={form.control}
             name="cardNumber"
@@ -127,29 +143,22 @@ export default function AddCard({ initialData, onSaved, onCancel }: Props) {
             )}
           />
 
-          <div className="grid grid-cols-3 gap-3">
+        
+          <div className="grid grid-cols-2 gap-3">
             <FormField
               control={form.control}
-              name="expiryMonth"
+              name="expiry"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>MM</FormLabel>
+                  <FormLabel>Expiry</FormLabel>
                   <FormControl>
-                    <Input placeholder="MM" {...field} />
+                    <Input
+                      placeholder="MM/YY"
+                      value={formatExpiry(field.value)}
+                      onChange={(e) => field.onChange(e.target.value)}
+                    />
                   </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="expiryYear"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>YY</FormLabel>
-                  <FormControl>
-                    <Input placeholder="YY" {...field} />
-                  </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -163,6 +172,7 @@ export default function AddCard({ initialData, onSaved, onCancel }: Props) {
                   <FormControl>
                     <Input placeholder="***" {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import AddCard from "@/components/vault/AddCard";
 import AddPassword from "@/components/vault/AddPassword";
 import CardItem from "@/components/vault/CardItem";
@@ -10,7 +10,9 @@ import toast from "react-hot-toast";
 import { Lock } from "lucide-react";
 
 export default function Home() {
-  const { isSignedIn, isLoaded } = useAuth();
+  const { status } = useSession();
+  const isSignedIn = status === "authenticated";
+  const isLoaded = status !== "loading";
 
   const [cards, setCards] = useState<any[]>([]);
   const [passwords, setPasswords] = useState<any[]>([]);
@@ -45,26 +47,22 @@ export default function Home() {
     fetchVault();
   }, [isSignedIn, isLoaded]);
 
-  const deletePassword = async (id: string) => {
-    await fetch(`/api/passwords?id=${id}`, {
-      method: "DELETE",
-    });
 
+  const deletePassword = async (id: string) => {
+    await fetch(`/api/passwords?id=${id}`, { method: "DELETE" });
     setPasswords((p) => p.filter((x) => x._id !== id));
     toast.success("Password deleted");
   };
 
   const deleteCard = async (id: string) => {
-    await fetch(`/api/cards?id=${id}`, {
-      method: "DELETE",
-    });
-
+    await fetch(`/api/cards?id=${id}`, { method: "DELETE" });
     setCards((c) => c.filter((x) => x._id !== id));
     toast.success("Card deleted");
   };
 
   return (
     <main className="min-h-screen p-8">
+
       <h1 className="text-3xl font-bold mb-2">RazeCrypt</h1>
       <p className="text-muted-foreground mb-8">
         Securely store and manage your passwords and cards
@@ -95,16 +93,11 @@ export default function Home() {
           <h2 className="font-bold mb-4 text-center">Your Cards</h2>
 
           {!isSignedIn ? (
-            <div className="bg-muted border border-dashed rounded-xl p-6 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
-              <Lock className="h-5 w-5" />
-              <p>Please log in to see your saved cards</p>
-            </div>
+            <LockedState message="Please log in to see your saved cards" />
           ) : loading ? (
-            <p className="text-center text-muted-foreground">Loading...</p>
+            <LoadingState />
           ) : cards.length === 0 ? (
-            <p className="text-center text-muted-foreground">
-              No cards saved yet
-            </p>
+            <EmptyState message="No cards saved yet" />
           ) : (
             <div className="flex flex-col gap-4">
               {cards.map((card) => (
@@ -118,20 +111,16 @@ export default function Home() {
             </div>
           )}
         </div>
+
         <div>
           <h2 className="font-bold mb-4 text-center">Your Passwords</h2>
 
           {!isSignedIn ? (
-            <div className="bg-muted border border-dashed rounded-xl p-6 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
-              <Lock className="h-5 w-5" />
-              <p>Please log in to see your saved passwords</p>
-            </div>
+            <LockedState message="Please log in to see your saved passwords" />
           ) : loading ? (
-            <p className="text-center text-muted-foreground">Loading...</p>
+            <LoadingState />
           ) : passwords.length === 0 ? (
-            <p className="text-center text-muted-foreground">
-              No passwords saved yet
-            </p>
+            <EmptyState message="No passwords saved yet" />
           ) : (
             <div className="flex flex-col gap-4">
               {passwords.map((password) => (
@@ -148,4 +137,22 @@ export default function Home() {
       </div>
     </main>
   );
+}
+
+
+function LockedState({ message }: { message: string }) {
+  return (
+    <div className="bg-muted border border-dashed rounded-xl p-6 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
+      <Lock className="h-5 w-5" />
+      <p>{message}</p>
+    </div>
+  );
+}
+
+function LoadingState() {
+  return <p className="text-center text-muted-foreground">Loading...</p>;
+}
+
+function EmptyState({ message }: { message: string }) {
+  return <p className="text-center text-muted-foreground">{message}</p>;
 }

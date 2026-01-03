@@ -21,9 +21,13 @@ export default function PasswordItem({ password, onDelete, onEdit }: any) {
         </div>
       </div>
 
-      <p className="text-sm text-muted-foreground">{password.username}</p>
+      <div className="bg-muted rounded-lg px-4 py-3">
+        <p className="text-xs text-muted-foreground">Username</p>
+        <p className="text-sm text-foreground mt-2 ">{password.username}</p>
+      </div>
 
       <div className="bg-muted rounded-lg px-4 py-3">
+        <p className="text-xs text-muted-foreground">Password</p>
         <SecretField value={password.password} />
       </div>
     </div>

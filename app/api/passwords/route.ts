@@ -1,28 +1,24 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectDB } from "@/lib/db";
 import Password from "@/models/Password";
 import { encrypt, decrypt } from "@/lib/crypto";
 
 export async function POST(req: Request) {
   try {
-    const authData = auth();
-    const userId = (await authData).userId;
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
 
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
-    const body = await req.json();
-    const { website, username, password } = body;
 
-    console.log("BODY:", body);
-    console.log("FIELDS:", { website, username, password });
+    const { website, username, password } = await req.json();
 
     if (!website || !username || !password) {
       return new NextResponse("Missing fields", { status: 400 });
     }
-
-    const encryptedPassword = encrypt(password);
 
     await connectDB();
 
@@ -30,7 +26,7 @@ export async function POST(req: Request) {
       userId,
       website,
       username,
-      encryptedPassword,
+      encryptedPassword: encrypt(password),
     });
 
     return NextResponse.json({ success: true });
@@ -42,27 +38,28 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
-    const authData = auth();
-    const userId = (await authData).userId;
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
 
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
+
     await connectDB();
 
     const passwords = await Password.find({ userId }).sort({
       createdAt: -1,
     });
 
-    const decryptedPasswords = passwords.map((item) => ({
-      _id: item._id,
-      website: item.website,
-      username: item.username,
-      password: decrypt(item.encryptedPassword),
-      createdAt: item.createdAt,
-    }));
-
-    return NextResponse.json(decryptedPasswords);
+    return NextResponse.json(
+      passwords.map((item) => ({
+        _id: item._id,
+        website: item.website,
+        username: item.username,
+        password: decrypt(item.encryptedPassword),
+        createdAt: item.createdAt,
+      }))
+    );
   } catch (error) {
     console.error("GET /api/passwords error:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
@@ -71,16 +68,14 @@ export async function GET() {
 
 export async function DELETE(req: Request) {
   try {
-    const authData = auth();
-    const userId = (await authData).userId;
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
 
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
-
+    const id = new URL(req.url).searchParams.get("id");
     if (!id) {
       return new NextResponse("Missing id", { status: 400 });
     }
@@ -102,22 +97,21 @@ export async function DELETE(req: Request) {
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
+
 export async function PUT(req: Request) {
   try {
-    const authData = auth();
-    const userId = (await authData).userId;
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
+
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const body = await req.json();
-    const { id, website, username, password } = body;
+    const { id, website, username, password } = await req.json();
 
     if (!id || !website || !username || !password) {
       return new NextResponse("Missing fields", { status: 400 });
     }
-
-    const encryptedPassword = encrypt(password);
 
     await connectDB();
 
@@ -126,7 +120,7 @@ export async function PUT(req: Request) {
       {
         website,
         username,
-        encryptedPassword,
+        encryptedPassword: encrypt(password),
       }
     );
 

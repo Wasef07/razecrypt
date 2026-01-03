@@ -21,9 +21,11 @@ export default function CardItem({ card, onDelete, onEdit }: any) {
         </div>
       </div>
 
+
       <div className="space-y-1">
-        <p className="text-xs text-muted-foreground">Card Number</p>
+        
         <div className="bg-muted rounded-lg px-4 py-3">
+          <p className="text-xs text-muted-foreground">Card Number</p>
           <SecretField
             value={formatCardNumber(card.cardNumber)}
             masked={`•••• •••• •••• ${card.cardNumber.slice(-4)}`}
@@ -31,15 +33,12 @@ export default function CardItem({ card, onDelete, onEdit }: any) {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 ">
+      <div className="grid grid-cols-2 gap-4">
         <div className="bg-muted rounded-lg px-4 py-3 flex flex-col justify-center">
-          <p className="text-xs text-muted-foreground mb-1">Expiry Month</p>
-          <p className="font-mono text-sm">{card.expiryMonth}</p>
-        </div>
-
-        <div className="bg-muted rounded-lg px-4 py-3 flex flex-col justify-center">
-          <p className="text-xs text-muted-foreground mb-1">Expiry Year</p>
-          <p className="font-mono text-sm">{card.expiryYear}</p>
+          <p className="text-xs text-muted-foreground mb-1">Expiry</p>
+          <p className="font-mono text-sm">
+            {card.expiryMonth}/{card.expiryYear}
+          </p>
         </div>
 
         <div className="bg-muted rounded-lg px-4 py-3">

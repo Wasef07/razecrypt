@@ -1,20 +1,22 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectDB } from "@/lib/db";
 import Card from "@/models/Card";
 import { encrypt, decrypt } from "@/lib/crypto";
 
+
 export async function POST(req: Request) {
   try {
-    const authData = auth();
-    const userId = (await authData).userId;
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
 
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const body = await req.json();
-    const { cardName, expiryMonth, expiryYear, cardNumber, cvv } = body;
+    const { cardName, expiryMonth, expiryYear, cardNumber, cvv } =
+      await req.json();
 
     if (!cardName || !expiryMonth || !expiryYear || !cardNumber || !cvv) {
       return new NextResponse("Missing fields", { status: 400 });
@@ -22,16 +24,13 @@ export async function POST(req: Request) {
 
     await connectDB();
 
-    const encryptedCardNumber = encrypt(cardNumber);
-    const encryptedCvv = encrypt(cvv);
-
     await Card.create({
       userId,
       cardName,
       expiryMonth,
       expiryYear,
-      encryptedCardNumber,
-      encryptedCvv,
+      encryptedCardNumber: encrypt(cardNumber),
+      encryptedCvv: encrypt(cvv),
     });
 
     return NextResponse.json({ success: true });
@@ -43,8 +42,8 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
-    const authData = auth();
-    const userId = (await authData).userId;
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
 
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
@@ -56,17 +55,17 @@ export async function GET() {
       createdAt: -1,
     });
 
-    const decryptedCards = cards.map((card) => ({
-      _id: card._id,
-      cardName: card.cardName,
-      expiryMonth: card.expiryMonth,
-      expiryYear: card.expiryYear,
-      cardNumber: decrypt(card.encryptedCardNumber),
-      cvv: decrypt(card.encryptedCvv),
-      createdAt: card.createdAt,
-    }));
-
-    return NextResponse.json(decryptedCards);
+    return NextResponse.json(
+      cards.map((card) => ({
+        _id: card._id,
+        cardName: card.cardName,
+        expiryMonth: card.expiryMonth,
+        expiryYear: card.expiryYear,
+        cardNumber: decrypt(card.encryptedCardNumber),
+        cvv: decrypt(card.encryptedCvv),
+        createdAt: card.createdAt,
+      }))
+    );
   } catch (error) {
     console.error("GET /api/cards error:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
@@ -75,16 +74,14 @@ export async function GET() {
 
 export async function DELETE(req: Request) {
   try {
-    const authData = auth();
-    const userId = (await authData).userId;
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
 
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
-
+    const id = new URL(req.url).searchParams.get("id");
     if (!id) {
       return new NextResponse("Missing id", { status: 400 });
     }
@@ -109,30 +106,19 @@ export async function DELETE(req: Request) {
 
 export async function PUT(req: Request) {
   try {
-    const authData = auth();
-    const userId = (await authData).userId;
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
+
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const body = await req.json();
-    console.log("UPDATE CARD BODY:", body);
+    const { id, cardName, cardNumber, expiryMonth, expiryYear, cvv } =
+      await req.json();
 
-    const { id, cardName, cardNumber, expiryMonth, expiryYear, cvv } = body;
-
-    if (
-      !id ||
-      !cardName ||
-      !cardNumber ||
-      !expiryMonth ||
-      !expiryYear ||
-      !cvv
-    ) {
+    if (!id || !cardName || !cardNumber || !expiryMonth || !expiryYear || !cvv) {
       return new NextResponse("Missing fields", { status: 400 });
     }
-
-    const encryptedCardNumber = encrypt(cardNumber);
-    const encryptedCvv = encrypt(cvv);
 
     await connectDB();
 
@@ -140,12 +126,11 @@ export async function PUT(req: Request) {
       { _id: id, userId },
       {
         cardName,
-        cardNumber: encryptedCardNumber,
-        cvv: encryptedCvv,
         expiryMonth,
         expiryYear,
-      },
-      { new: true }
+        encryptedCardNumber: encrypt(cardNumber),
+        encryptedCvv: encrypt(cvv),
+      }
     );
 
     if (!updated) {

@@ -1,15 +1,36 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { getToken } from "next-auth/jwt";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/forum(.*)"]);
+export async function middleware(req: NextRequest) {
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
 
-export default clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) await auth.protect();
-});
+  const { pathname } = req.nextUrl;
+  if (
+    pathname.startsWith("/sign-in") ||
+    pathname.startsWith("/sign-up") ||
+    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/favicon.ico")
+  ) {
+    return NextResponse.next();
+  }
 
+  if (!token) {
+    const signInUrl = new URL("/sign-in", req.url);
+    signInUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(signInUrl);
+  }
+
+  return NextResponse.next();
+}
 export const config = {
   matcher: [
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-
-    "/(api|trpc)(.*)",
+    "/",            
+    "/api/cards/:path*",
+    "/api/passwords/:path*",
   ],
 };
