@@ -1,65 +1,151 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useAuth } from "@clerk/nextjs";
+import AddCard from "@/components/vault/AddCard";
+import AddPassword from "@/components/vault/AddPassword";
+import CardItem from "@/components/vault/CardItem";
+import PasswordItem from "@/components/vault/PasswordItem";
+import toast from "react-hot-toast";
+import { Lock } from "lucide-react";
 
 export default function Home() {
+  const { isSignedIn, isLoaded } = useAuth();
+
+  const [cards, setCards] = useState<any[]>([]);
+  const [passwords, setPasswords] = useState<any[]>([]);
+  const [editingCard, setEditingCard] = useState<any | null>(null);
+  const [editingPassword, setEditingPassword] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchVault = async () => {
+    setLoading(true);
+
+    const [cardsRes, passwordsRes] = await Promise.all([
+      fetch("/api/cards"),
+      fetch("/api/passwords"),
+    ]);
+
+    setCards(cardsRes.ok ? await cardsRes.json() : []);
+    setPasswords(passwordsRes.ok ? await passwordsRes.json() : []);
+
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    if (!isSignedIn) {
+      setCards([]);
+      setPasswords([]);
+      setLoading(false);
+      return;
+    }
+
+    fetchVault();
+  }, [isSignedIn, isLoaded]);
+
+  const deletePassword = async (id: string) => {
+    await fetch(`/api/passwords?id=${id}`, {
+      method: "DELETE",
+    });
+
+    setPasswords((p) => p.filter((x) => x._id !== id));
+    toast.success("Password deleted");
+  };
+
+  const deleteCard = async (id: string) => {
+    await fetch(`/api/cards?id=${id}`, {
+      method: "DELETE",
+    });
+
+    setCards((c) => c.filter((x) => x._id !== id));
+    toast.success("Card deleted");
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="min-h-screen p-8">
+      <h1 className="text-3xl font-bold mb-2">RazeCrypt</h1>
+      <p className="text-muted-foreground mb-8">
+        Securely store and manage your passwords and cards
+      </p>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+        <AddCard
+          initialData={editingCard}
+          onCancel={() => setEditingCard(null)}
+          onSaved={() => {
+            setEditingCard(null);
+            fetchVault();
+          }}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+
+        <AddPassword
+          initialData={editingPassword}
+          onCancel={() => setEditingPassword(null)}
+          onSaved={() => {
+            setEditingPassword(null);
+            fetchVault();
+          }}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div>
+          <h2 className="font-bold mb-4 text-center">Your Cards</h2>
+
+          {!isSignedIn ? (
+            <div className="bg-muted border border-dashed rounded-xl p-6 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
+              <Lock className="h-5 w-5" />
+              <p>Please log in to see your saved cards</p>
+            </div>
+          ) : loading ? (
+            <p className="text-center text-muted-foreground">Loading...</p>
+          ) : cards.length === 0 ? (
+            <p className="text-center text-muted-foreground">
+              No cards saved yet
+            </p>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {cards.map((card) => (
+                <CardItem
+                  key={card._id}
+                  card={card}
+                  onEdit={setEditingCard}
+                  onDelete={deleteCard}
+                />
+              ))}
+            </div>
+          )}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div>
+          <h2 className="font-bold mb-4 text-center">Your Passwords</h2>
+
+          {!isSignedIn ? (
+            <div className="bg-muted border border-dashed rounded-xl p-6 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
+              <Lock className="h-5 w-5" />
+              <p>Please log in to see your saved passwords</p>
+            </div>
+          ) : loading ? (
+            <p className="text-center text-muted-foreground">Loading...</p>
+          ) : passwords.length === 0 ? (
+            <p className="text-center text-muted-foreground">
+              No passwords saved yet
+            </p>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {passwords.map((password) => (
+                <PasswordItem
+                  key={password._id}
+                  password={password}
+                  onEdit={setEditingPassword}
+                  onDelete={deletePassword}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }
