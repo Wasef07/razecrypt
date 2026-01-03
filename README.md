@@ -1,36 +1,157 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🔐 RazeCrypt
 
-## Getting Started
+RazeCrypt is a secure, privacy-first password and card vault built with **Next.js App Router**, featuring **end-to-end encryption**, **modern authentication**, and **production-grade security patterns**.
 
-First, run the development server:
+It supports **credentials login**, **Google OAuth**, and **GitHub OAuth**, with unified user accounts and protected routes — all without requiring a paid domain.
 
-```bash
+---
+
+## ✨ Features
+
+### 🔑 Authentication
+- Email & password authentication (bcrypt hashed)
+- Google OAuth
+- GitHub OAuth
+- Unified accounts (same email → same user)
+- JWT-based sessions (NextAuth / Auth.js)
+- Clean redirects & polished auth UX
+
+### 🧱 Security
+- AES encryption for:
+  - Stored passwords
+  - Card numbers
+  - CVV
+- Secrets are **never stored in plain text**
+- Server-side encryption & decryption only
+- API protection via server sessions
+- Route protection via Edge Middleware
+
+### 🗄️ Vault Functionality
+- Store and manage:
+  - Passwords (website, username, password)
+  - Credit/debit cards (name, number, expiry, CVV)
+- Full CRUD operations
+- Masked secrets with reveal / copy
+- Auto-hide sensitive fields
+- Per-user data isolation
+
+### 🎨 UI / UX
+- Modern, clean UI with Tailwind CSS + shadcn/ui
+- Dark / light theme toggle
+- Responsive layout
+- OAuth buttons with official provider logos
+- Clear signed-in vs signed-out states
+
+---
+
+## 🧠 Tech Stack
+
+**Frontend**
+- Next.js 16 (App Router)
+- React
+- Tailwind CSS
+- shadcn/ui
+- Lucide Icons
+
+**Backend**
+- Next.js API Routes
+- MongoDB + Mongoose
+- AES encryption
+- bcrypt
+
+**Authentication**
+- NextAuth (Auth.js)
+- Credentials Provider
+- Google OAuth
+- GitHub OAuth
+- JWT sessions
+
+**Deployment**
+- Vercel-ready
+
+---
+
+## 🏗️ Architecture Overview
+
+            ┌──────────────┐
+            │   Browser    │
+            │ (Client UI)  │
+            └──────┬───────┘
+                │ HTTPS
+                ▼
+            ┌──────────────────────┐
+            │ Next.js App Router   │
+            │ (Server Components)  │
+            ├──────────────────────┤
+            │ Edge Middleware      │  ← Route protection
+            ├──────────────────────┤
+            │ Auth.js (NextAuth)   │  ← Session validation
+            ├──────────────────────┤
+            │ API Routes           │  ← Secure server logic
+            │  - /api/cards        │
+            │  - /api/passwords    │
+            ├──────────────────────┤
+            │ Encryption Layer     │  ← AES encrypt/decrypt
+            ├──────────────────────┤
+            │ MongoDB (Mongoose)   │
+            └──────────────────────┘
+
+---
+
+## 🔐 Security Model
+
+- Passwords & card data are encrypted using AES **before** being stored
+- Decryption happens **only on the server**
+- Authentication state is verified on:
+  - UI level (session)
+  - Route level (middleware)
+  - API level (server session)
+- OAuth users are automatically linked by email to prevent duplicate accounts
+
+---
+
+## 🧪 Route Protection
+
+- Public routes:
+  - `/sign-in`
+  - `/sign-up`
+  - `/api/auth/*`
+- Protected routes:
+  - `/`
+  - `/api/cards`
+  - `/api/passwords`
+
+Edge Middleware blocks unauthorized access and redirects users to `/sign-in`.
+
+---
+
+## 🔧 Environment Variables
+
+Create a `.env.local` file:
+
+```env
+MONGODB_URI=your_mongodb_uri
+NEXTAUTH_SECRET=your_random_secret
+NEXTAUTH_URL=http://localhost:3000
+
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+
+---
+
+## 🚀 Getting Started
+
+# Install dependencies
+npm install
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+# Build for production
+npm run build
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# App runs at:
+http://localhost:3000
