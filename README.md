@@ -73,28 +73,28 @@ It supports **credentials login**, **Google OAuth**, and **GitHub OAuth**, with 
 
 ## 🏗️ Architecture Overview
 
-            ┌──────────────┐
-            │   Browser    │
-            │ (Client UI)  │
-            └──────┬───────┘
-                │ HTTPS
-                ▼
-            ┌──────────────────────┐
-            │ Next.js App Router   │
-            │ (Server Components)  │
-            ├──────────────────────┤
-            │ Edge Middleware      │  ← Route protection
-            ├──────────────────────┤
-            │ Auth.js (NextAuth)   │  ← Session validation
-            ├──────────────────────┤
-            │ API Routes           │  ← Secure server logic
-            │  - /api/cards        │
-            │  - /api/passwords    │
-            ├──────────────────────┤
-            │ Encryption Layer     │  ← AES encrypt/decrypt
-            ├──────────────────────┤
-            │ MongoDB (Mongoose)   │
-            └──────────────────────┘
+                                  ┌──────────────┐
+                                  │   Browser    │
+                                  │ (Client UI)  │
+                                  └──────┬───────┘
+                                      │ HTTPS
+                                      ▼
+                                  ┌──────────────────────┐
+                                  │ Next.js App Router   │
+                                  │ (Server Components)  │
+                                  ├──────────────────────┤
+                                  │ Edge Middleware      │  ← Route protection
+                                  ├──────────────────────┤
+                                  │ Auth.js (NextAuth)   │  ← Session validation
+                                  ├──────────────────────┤
+                                  │ API Routes           │  ← Secure server logic
+                                  │  - /api/cards        │
+                                  │  - /api/passwords    │
+                                  ├──────────────────────┤
+                                  │ Encryption Layer     │  ← AES encrypt/decrypt
+                                  ├──────────────────────┤
+                                  │ MongoDB (Mongoose)   │
+                                  └──────────────────────┘
 
 ---
 
@@ -125,6 +125,7 @@ Edge Middleware blocks unauthorized access and redirects users to `/sign-in`.
 
 ---
 
+
 ## 🔧 Environment Variables
 
 Create a `.env.local` file:
@@ -139,6 +140,7 @@ GOOGLE_CLIENT_SECRET=your_google_client_secret
 
 GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_client_secret
+```
 
 ---
 
@@ -155,3 +157,5 @@ npm run build
 
 # App runs at:
 http://localhost:3000
+
+---
